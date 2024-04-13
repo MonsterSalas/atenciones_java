@@ -1,4 +1,4 @@
-package com.atenciones.atenciones;
+package com.atenciones.atenciones.model;
 import java.util.Date;
 public class Atencion {
     private int id;
