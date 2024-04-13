@@ -10,7 +10,9 @@ public interface PacienteService {
     Optional<Paciente> findByRut(String rut);
 
     Paciente createPaciente(Paciente paciente);
-    Paciente updatePaciente (Long id, Paciente c);
+
+    Paciente updatePaciente (Long id, Paciente paciente);
+
     void deletePaciente (Long id);
 
 

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.atenciones.atenciones.model.Paciente;
+import com.atenciones.atenciones.model.Atencion;
 import com.atenciones.atenciones.service.PacienteService;
 
 import java.util.List;
@@ -21,8 +21,8 @@ import java.util.Optional;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/pacientes")
-public class PacienteController {
+@RequestMapping("/atenciones")
+public class AtencionController {
     
     @Autowired
     private PacienteService pacienteService;
