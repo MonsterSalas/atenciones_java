@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "Atencion")
@@ -20,12 +21,17 @@ public class Atencion {
     @Column(name = "especialidad")
     @NotBlank(message = "especialidad no puede ser nulo")
     private String especialidad;
+
     @Column(name = "medico")
     @NotBlank(message = "medico no puede ser nulo")
     private String medico;
 
+    @Column(name = "rut_paciente")
+    @NotBlank(message = "rut no puede ser nulo")
+    private String rut_paciente;
+
     @Column(name = "fecha_atencion")
-    @NotBlank(message = "fecha_atencion no puede ser nulo")
+    @NotNull(message = "fecha_atencion no puede ser nulo")
     private Date fecha_atencion;
 
     public Long getId() {
@@ -42,6 +48,12 @@ public class Atencion {
         this.especialidad = especialidad;
     }
 
+    public String getRut_paciente() {
+        return rut_paciente;
+    }
+    public void setRut_paciente(String rut_paciente) {
+        this.rut_paciente = rut_paciente;
+    }
     public String getMedico() {
         return medico;
     }
