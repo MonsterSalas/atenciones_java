@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.atenciones.atenciones.model.Atencion;
@@ -31,9 +30,6 @@ public class AtencionController {
     private AtencionService atencionService;
     @Autowired
     private PacienteService pacienteService;
-
-    
-
     @GetMapping
     public List<Atencion> getAllAtencion(){
         return atencionService.getAllAtencion();
@@ -48,8 +44,6 @@ public class AtencionController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró ningún atencion con el ID especificado");
         }
     }
-
-
     @PostMapping("/crear")
     public ResponseEntity<Object> createAtencion(@Valid @RequestBody Atencion atencion, BindingResult result) {
         // Verificar si hay errores de validación en la atención
@@ -58,13 +52,10 @@ public class AtencionController {
             result.getAllErrors().forEach(error -> errorMessage.append(error.getDefaultMessage()).append("; "));
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage.toString());
         }
-    
         // Obtener el rut del paciente asociado a la atención
         String rutPaciente = atencion.getRut_paciente();
-    
         // Obtener el paciente asociado al rut proporcionado
         Optional<Paciente> pacienteOptional = pacienteService.findByRut(rutPaciente);
-    
         // Verificar si el paciente existe
         if (pacienteOptional.isEmpty()) {
             String errorMessage = "No se encontró ningún paciente con el rut: " + rutPaciente;
@@ -75,32 +66,36 @@ public class AtencionController {
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAtencion);
         }
     }
-    
-    
     @PutMapping("/{id}")
     public ResponseEntity<Object> updateUsuario(@PathVariable Long id, @Valid @RequestBody Atencion atencion, BindingResult result) {
 
         Optional<Atencion> atencionExits = atencionService.getAtencionByid(id);
         if (atencionExits.isPresent()) {
+                // Obtener el rut del paciente asociado a la atención
+                String rutPaciente = atencion.getRut_paciente();
+                // Obtener el paciente asociado al rut proporcionado
+                Optional<Paciente> pacienteOptional = pacienteService.findByRut(rutPaciente);
             if (result.hasErrors()) {
                 // Si hay errores de validación, construye una respuesta con los mensajes de error
                 StringBuilder errorMessage = new StringBuilder("Error de validación: ");
                 result.getAllErrors().forEach(error -> errorMessage.append(error.getDefaultMessage()).append("; "));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage.toString());
             }
-            else{
+            if(pacienteOptional.isPresent()){
                 Atencion updatedAtencion = atencionService.updateAtencion(id, atencion);
                 return ResponseEntity.ok(updatedAtencion);
-            }      
+            }
+            else
+            {
+                String errorMessage = "No se encontró ningún paciente con el rut: " + rutPaciente;
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
+            }
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró ningún paciente con el ID especificado");
         }
-
     }
     @DeleteMapping("/{id}")
     public void deleteAtencion(@PathVariable Long id) {
         atencionService.deleteAtencion(id);
     } 
-    
-
 }

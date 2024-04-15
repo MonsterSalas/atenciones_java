@@ -81,12 +81,9 @@ public class PacienteController {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró ningún paciente con el ID especificado");
         }
-
     }
     @DeleteMapping("/{id}")
     public void deletePaciente(@PathVariable Long id) {
         pacienteService.deletePaciente(id);
     } 
-    
-
 }

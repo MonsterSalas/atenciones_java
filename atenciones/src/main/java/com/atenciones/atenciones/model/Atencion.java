@@ -1,4 +1,5 @@
 package com.atenciones.atenciones.model;
+import java.time.LocalDate;
 import java.util.Date;
 
 import jakarta.persistence.Column;
@@ -32,7 +33,7 @@ public class Atencion {
 
     @Column(name = "fecha_atencion")
     @NotNull(message = "fecha_atencion no puede ser nulo")
-    private Date fecha_atencion;
+    private LocalDate fecha_atencion;
 
     public Long getId() {
         return id;
@@ -62,11 +63,11 @@ public class Atencion {
         this.medico = medico;
     }
 
-    public Date getFecha_atencion() {
+    public LocalDate getFecha_atencion() {
         return fecha_atencion;
     }
 
-    public void setFecha_atencion(Date fecha_atencion) {
+    public void setFecha_atencion(LocalDate fecha_atencion) {
         this.fecha_atencion = fecha_atencion;
     }
 
