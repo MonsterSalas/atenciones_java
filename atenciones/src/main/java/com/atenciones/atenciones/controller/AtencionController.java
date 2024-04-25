@@ -3,6 +3,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,18 +32,26 @@ public class AtencionController {
     private AtencionService atencionService;
     @Autowired
     private PacienteService pacienteService;
+
     @GetMapping
     public List<Atencion> getAllAtencion(){
         return atencionService.getAllAtencion();
     }
+    
             
     @GetMapping("/{id}")
     public ResponseEntity<Object> getPacienteByid(@PathVariable Long id) {
         Optional<Atencion> atencionExist = atencionService.getAtencionByid(id);
         if (atencionExist.isPresent()) {
-            return ResponseEntity.ok(atencionExist.get());
+            Atencion atencion = atencionExist.get();
+            EntityModel<Atencion> entityModel = EntityModel.of(atencion,
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getPacienteByid(id)).withSelfRel(),
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllAtencion()).withRel("all-atenciones"));
+            return ResponseEntity.ok(entityModel);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró ningún atencion con el ID especificado");
+            ResponseMessage errorResponse = new ResponseMessage("No se encontró ningún atencion con el ID especificado");
+            EntityModel<ResponseMessage> entityModel = EntityModel.of(errorResponse);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(entityModel);
         }
     }
     @PostMapping("/crear")
@@ -54,7 +64,7 @@ public class AtencionController {
         }
         // Obtener el rut del paciente asociado a la atención
         String rutPaciente = atencion.getRut_paciente();
-        // Obtener el paciente asociado al rut proporcionado
+        //Obtener el paciente asociado al rut proporcionado
         Optional<Paciente> pacienteOptional = pacienteService.findByRut(rutPaciente);
         // Verificar si el paciente existe
         if (pacienteOptional.isEmpty()) {
@@ -98,4 +108,15 @@ public class AtencionController {
     public void deleteAtencion(@PathVariable Long id) {
         atencionService.deleteAtencion(id);
     } 
+    class ResponseMessage {
+        private String message;
+    
+        public ResponseMessage(String message) {
+            this.message = message;
+        }
+    
+        public String getMessage() {
+            return message;
+        }
+    }
 }
