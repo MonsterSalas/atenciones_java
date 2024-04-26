@@ -3,7 +3,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +24,8 @@ import com.atenciones.atenciones.service.PacienteService;
 import java.util.List;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -34,18 +38,25 @@ public class AtencionController {
     private PacienteService pacienteService;
 
     @GetMapping
-    public List<Atencion> getAllAtencion(){
-        return atencionService.getAllAtencion();
-    }
-    
-            
+    public CollectionModel<EntityModel<Atencion>> getAllAtencion(){
+        List<Atencion> atenciones = atencionService.getAllAtencion();
+        List<EntityModel<Atencion>> atencionResources = atenciones.stream()
+            .map(atencion-> EntityModel.of(atencion,
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAtencionByid(atencion.getId())).withSelfRel()
+            ))
+            .collect(Collectors.toList());
+
+        WebMvcLinkBuilder linkTo = WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllAtencion());
+        CollectionModel<EntityModel<Atencion>> resources = CollectionModel.of(atencionResources, linkTo.withRel("atencion"));
+        return resources;
+    }   
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getPacienteByid(@PathVariable Long id) {
+    public ResponseEntity<Object> getAtencionByid(@PathVariable Long id) {
         Optional<Atencion> atencionExist = atencionService.getAtencionByid(id);
         if (atencionExist.isPresent()) {
             Atencion atencion = atencionExist.get();
             EntityModel<Atencion> entityModel = EntityModel.of(atencion,
-                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getPacienteByid(id)).withSelfRel(),
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAtencionByid(id)).withSelfRel(),
                     WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllAtencion()).withRel("all-atenciones"));
             return ResponseEntity.ok(entityModel);
         } else {
@@ -56,54 +67,59 @@ public class AtencionController {
     }
     @PostMapping("/crear")
     public ResponseEntity<Object> createAtencion(@Valid @RequestBody Atencion atencion, BindingResult result) {
-        // Verificar si hay errores de validación en la atención
         if (result.hasErrors()) {
             StringBuilder errorMessage = new StringBuilder("Error de validación: ");
             result.getAllErrors().forEach(error -> errorMessage.append(error.getDefaultMessage()).append("; "));
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage.toString());
+            ResponseMessage errorResponse = new ResponseMessage(errorMessage.toString());
+            EntityModel<ResponseMessage> entityModel = EntityModel.of(errorResponse);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(entityModel);
         }
-        // Obtener el rut del paciente asociado a la atención
         String rutPaciente = atencion.getRut_paciente();
-        //Obtener el paciente asociado al rut proporcionado
         Optional<Paciente> pacienteOptional = pacienteService.findByRut(rutPaciente);
-        // Verificar si el paciente existe
+    
         if (pacienteOptional.isEmpty()) {
             String errorMessage = "No se encontró ningún paciente con el rut: " + rutPaciente;
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+            ResponseMessage errorResponse = new ResponseMessage(errorMessage);
+            EntityModel<ResponseMessage> entityModel = EntityModel.of(errorResponse);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(entityModel);
         } else {
-            // Asignar el paciente a la atención
             Atencion createdAtencion = atencionService.createAtencion(atencion);
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdAtencion);
+            EntityModel<Atencion> entityModel = EntityModel.of(createdAtencion,
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAtencionByid(createdAtencion.getId())).withSelfRel(),
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllAtencion()).withRel("all-atenciones"));
+            return ResponseEntity.status(HttpStatus.CREATED).body(entityModel);
         }
     }
-    @PutMapping("/{id}")
-    public ResponseEntity<Object> updateUsuario(@PathVariable Long id, @Valid @RequestBody Atencion atencion, BindingResult result) {
-
-        Optional<Atencion> atencionExits = atencionService.getAtencionByid(id);
-        if (atencionExits.isPresent()) {
-                // Obtener el rut del paciente asociado a la atención
-                String rutPaciente = atencion.getRut_paciente();
-                // Obtener el paciente asociado al rut proporcionado
-                Optional<Paciente> pacienteOptional = pacienteService.findByRut(rutPaciente);
-            if (result.hasErrors()) {
-                // Si hay errores de validación, construye una respuesta con los mensajes de error
-                StringBuilder errorMessage = new StringBuilder("Error de validación: ");
-                result.getAllErrors().forEach(error -> errorMessage.append(error.getDefaultMessage()).append("; "));
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage.toString());
-            }
-            if(pacienteOptional.isPresent()){
-                Atencion updatedAtencion = atencionService.updateAtencion(id, atencion);
-                return ResponseEntity.ok(updatedAtencion);
-            }
-            else
-            {
-                String errorMessage = "No se encontró ningún paciente con el rut: " + rutPaciente;
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
-            }
+@PutMapping("/{id}")
+public ResponseEntity<Object> updateUsuario(@PathVariable Long id, @Valid @RequestBody Atencion atencion, BindingResult result) {
+    Optional<Atencion> atencionExist = atencionService.getAtencionByid(id);
+    if (atencionExist.isPresent()) {
+        if (result.hasErrors()) {
+            ResponseMessage errorResponse = new ResponseMessage("Error de validación: ");
+            result.getAllErrors().forEach(error -> errorResponse.message += error.getDefaultMessage() + "; ");
+            EntityModel<ResponseMessage> entityModel = EntityModel.of(errorResponse);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(entityModel);
+        }
+        String rutPaciente = atencion.getRut_paciente();
+        Optional<Paciente> pacienteOptional = pacienteService.findByRut(rutPaciente);
+        if (pacienteOptional.isPresent()) {
+            Atencion updatedAtencion = atencionService.updateAtencion(id, atencion);
+            ResponseMessage successResponse = new ResponseMessage("Atencion actualizada con éxito");
+            EntityModel<Atencion> entityModel = EntityModel.of(updatedAtencion,
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAtencionByid(id)).withSelfRel(),
+                    WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass()).getAllAtencion()).withRel("all-atenciones"));
+            return ResponseEntity.ok(entityModel);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró ningún paciente con el ID especificado");
+            ResponseMessage errorResponse = new ResponseMessage("No se encontró ningún paciente con el rut: " + rutPaciente);
+            EntityModel<ResponseMessage> entityModel = EntityModel.of(errorResponse);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(entityModel);
         }
+    } else {
+        ResponseMessage errorResponse = new ResponseMessage("No se encontró ningún atencion con el ID especificado");
+        EntityModel<ResponseMessage> entityModel = EntityModel.of(errorResponse);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(entityModel);
     }
+}
     @DeleteMapping("/{id}")
     public void deleteAtencion(@PathVariable Long id) {
         atencionService.deleteAtencion(id);
