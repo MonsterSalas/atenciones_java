@@ -14,16 +14,13 @@ import com.atenciones.atenciones.model.Paciente;
 public class PacienteRepositoryTest {
     @Autowired
     private PacienteRepository pacienteRepository;
-
     @Test
     public void guardarUsuarioTest() {
         Paciente paciente = new Paciente();
         paciente.setNombre("pruebas");
         paciente.setRut("123444");
-
         Paciente resultado = pacienteRepository.save(paciente);
         assertNotNull(resultado.getId());
         assertEquals("pruebas", resultado.getNombre());
     }
-    
 }
